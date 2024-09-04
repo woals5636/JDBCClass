@@ -1,7 +1,8 @@
-package days02;
+package days03;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -12,19 +13,20 @@ import java.util.Scanner;
 import org.doit.domain.DeptVO;
 
 import com.util.DBConn;
+
 /**
  * @author jam
- * @date 오후 4:56:48
- * @subject [jdbc] 
+ * @date 오전 9:07:01
+ * @subject [jdbc] PreparedStatement 사용해서 코딩 수정
  * @content 
  */
-public class Ex05 {
+public class Ex01 {
 
    public static String [] menu = { "추가", "수정", "삭제", "조회", "검색", "종료" };
    public static int selectedNumber ;
    public static Connection conn;
    public static Scanner scanner = new Scanner(System.in);
-   public static Statement stmt = null;
+   public static PreparedStatement pstmt = null;
 
    public static void main(String[] args) {
 
@@ -90,6 +92,8 @@ public class Ex05 {
    }
 
    private static void 부서검색() {
+	   // 테이블명, 컬럼명 등등은 ?로 대체할 수 없다.
+	   
 	   // 검색 조건 입력 ? 1 'b'(부서번호) /2 'n'(부서명) /3 'l'(지역명)
 	   // 검색어 입력
 	   String searchCondition;	//	검색조건
@@ -101,7 +105,7 @@ public class Ex05 {
 	   
 	   ArrayList<DeptVO> list = null;
 	      ResultSet rs = null;
-	      Statement stmt = null;
+	      PreparedStatement pstmt = null;
 	      
 	      String sql = "SELECT * "
 	            + "FROM dept "
@@ -114,22 +118,26 @@ public class Ex05 {
 	      
 	      //
 	      if (searchCondition.equals("b")) { // 부서번호 검색
-			sql += " deptno = " + searchWord;
+			sql += " deptno = ? ";
 		} else if(searchCondition.equals("n")) { // 부서명 검색
-			sql += " REGEXP_LIKE ( dname, '"+searchWord+"', 'i') " ;
+			sql += " REGEXP_LIKE ( dname, ? , 'i') " ;
 		} else if(searchCondition.equals("l")) { // 지역명 검색
-			sql += " REGEXP_LIKE ( loc, '"+searchWord+"', 'i') " ;
-		} else if(searchCondition.equals("l")) { // 부서명 또는 지역명 검색
-			sql += " REGEXP_LIKE ( dname, '\"+searchWord+\"', 'i') OR "
-					+ " REGEXP_LIKE ( loc, '"+searchWord+"', 'i') " ;
+			sql += " REGEXP_LIKE ( loc, ? , 'i') " ;
+		} else if(searchCondition.equals("nl")) { // 부서명 또는 지역명 검색
+			sql += " REGEXP_LIKE ( dname, ? , 'i') OR "
+					+ " REGEXP_LIKE ( loc, ? , 'i') " ;
 		}
 	     
-	      System.out.println(sql);
+
 	      
 	      try {
-	         stmt = conn.createStatement();
-	         rs = stmt.executeQuery(sql);
-	         
+	         pstmt = conn.prepareStatement(sql);
+	         pstmt.setString(1, searchWord);
+	         if(searchCondition.equals("nl")) { // 부서명 또는 지역명 검색
+	        	 pstmt.setString(2, searchWord);
+	         }
+	         rs = pstmt.executeQuery();
+		     System.out.println(sql);
 	         if (rs.next()) {
 	            list = new ArrayList<DeptVO>();
 	            do {
@@ -149,7 +157,7 @@ public class Ex05 {
 	      } finally {
 	         try {
 	            rs.close();
-	            stmt.close();
+	            pstmt.close();
 	         } catch (SQLException e) {
 	            e.printStackTrace();
 	         }
@@ -173,8 +181,10 @@ public class Ex05 {
       DeptVO vo = null;
       
       try {
-         stmt = conn.createStatement();
-         rs = stmt.executeQuery(sql);
+         // stmt = conn.createStatement();
+         // rs = stmt.executeQuery(sql);
+    	  pstmt = conn.prepareStatement(sql);
+    	  rs = pstmt.executeQuery();
          
          if (rs.next()) {
             list = new ArrayList<DeptVO>();
@@ -195,7 +205,7 @@ public class Ex05 {
       } finally {
          try {
             rs.close();
-            stmt.close();
+            pstmt.close();
          } catch (SQLException e) {
             e.printStackTrace();
          }
@@ -221,18 +231,33 @@ public class Ex05 {
       // 3. 삭제할 부서명, 지역명 입력받아서 수정(delete)
       ResultSet rs = null;
       DeptVO vo = null;
-      
+
       String deptnos;
       
       System.out.print("> 삭제할 부서번호 입력하세요 ? ");
-      deptnos = scanner.nextLine(); // 60, 70
-      String sql = "DELETE FROM dept"
-            + " WHERE deptno = IN(" + deptnos + ")";
-      System.out.println(); // 쿼리 확인
+      deptnos = scanner.nextLine(); // 6, 50
       
+      String regex = "\\s*,\\s*";
+      String [] deptnoArr = deptnos.split(regex);
+      
+      
+      String sql = "DELETE FROM dept "
+            + " WHERE deptno IN ( ";
+       for (int i = 0; i < deptnoArr.length; i++) {
+         sql +="? , ";
+       } // 
+       // 마지막 붙은 , 제거
+        sql = sql.substring(0, sql.length()-2);
+        sql +=  " )";
+
       try {
-         stmt = conn.createStatement();
-         int rowCount = stmt.executeUpdate(sql);
+         pstmt = conn.prepareStatement(sql);
+         //pstmt.setString(1, deptnos);
+         for (int i = 0; i < deptnoArr.length; i++) {
+            pstmt.setString(i+1, deptnoArr[i]);
+         }
+         int rowCount = pstmt.executeUpdate();
+         System.out.println(sql);
          if( rowCount >= 1 ) {
             System.out.println(" 부서 삭제 성공!!!");
          }else {
@@ -242,12 +267,11 @@ public class Ex05 {
          e.printStackTrace();
       } finally {
          try {
-            stmt.close();
+            pstmt.close();
          } catch (SQLException e) {
             e.printStackTrace();
          }
       }
-	      
    }
 
    private static void 부서수정() {
@@ -261,10 +285,11 @@ public class Ex05 {
       int deptno = scanner.nextInt();
       String sql = "SELECT * "
             + " FROM dept "
-            + " WHERE deptno=" + deptno;
+            + " WHERE deptno= ?";
       try {
-         stmt = conn.createStatement();
-         rs = stmt.executeQuery(sql);
+         pstmt = conn.prepareStatement(sql);
+         pstmt.setInt(1, deptno);
+         rs = pstmt.executeQuery();
          
          if( ! rs.next() ) {
             System.out.println(" 수정할 부서가 존재하지 않습니다.");
@@ -282,7 +307,7 @@ public class Ex05 {
       } finally {
          try {
             rs.close();
-            stmt.close();
+            pstmt.close();
          } catch (SQLException e) { 
             e.printStackTrace();
          }
@@ -292,55 +317,52 @@ public class Ex05 {
       // dname=>홍길동, loc=>서울 엔터
       // loc=>서울 엔터
       // dname=>홍길동 엔터
+
       System.out.print("> 수정할 부서명, 지역명 입력하세요 ? ");
       String dname = scanner.next();
-      String loc = scanner.next();
-      
-      sql = String.format(
-              "UPDATE dept "
-            + "SET dname='%s', loc='%s'"
-            + "WHERE deptno=%d"
-            , dname, loc, deptno);
+      String loc = scanner.next();     
+      sql = "UPDATE dept "
+            + "SET dname=?, loc=?"
+            + "WHERE deptno=?";
       System.out.println(sql);
       
       try {
-         stmt = conn.createStatement();
-         int rowCount = stmt.executeUpdate(sql);
-         if( rowCount == 1 ) {
+         pstmt = conn.prepareStatement(sql);
+         pstmt.setString(1, dname);
+         pstmt.setString(2, loc);
+         pstmt.setInt(3, deptno);
+         int rowCount = pstmt.executeUpdate();
+         if( rowCount >= 1 ) {
             System.out.println(" 부서 수정 성공!!!");
          }
       } catch (SQLException e) {
          e.printStackTrace();
       } finally {
          try {
-            stmt.close();
+            pstmt.close();
          } catch (SQLException e) {
             e.printStackTrace();
          }
       }
-      
-      
-      
-
    }
 
    private static void 부서추가() {
+	   
       System.out.print("> 부서번호,부서명,지역명 입력하세요 ? ");
       int deptno = scanner.nextInt();
       String dname = scanner.next();
       String loc = scanner.next();
             
-      //String sql = "INSERT INTO dept ( deptno, dname, loc ) "
-      //      + "VALUES ("+deptno+",'"+dname+"','"+loc +"')";
-      String sql = String.format(
-            "INSERT INTO dept ( deptno, dname, loc ) "
-              + "VALUES (%d,'%s','%s')"
-            , deptno, dname, loc);
-      //System.out.println( sql );
+      String sql = "INSERT INTO dept ( deptno, dname, loc ) "
+            + "VALUES (?, ?, ?)";	// 바인딩
       
+      //System.out.println( sql );
       try {
-         stmt = conn.createStatement();
-         int rowCount = stmt.executeUpdate(sql);
+         pstmt = conn.prepareStatement(sql);
+         pstmt.setInt(1,deptno);
+         pstmt.setString(2, dname);
+         pstmt.setString(3, loc);
+         int rowCount = pstmt.executeUpdate();
          if( rowCount == 1 ) {
             System.out.println(" 부서 추가 성공!!!");
          }
@@ -348,12 +370,11 @@ public class Ex05 {
          e.printStackTrace();
       } finally {
          try {
-            stmt.close();
+            pstmt.close();
          } catch (SQLException e) {
             e.printStackTrace();
          }
       }
-
    }
 
    private static void 메뉴선택() {
