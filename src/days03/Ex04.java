@@ -15,37 +15,33 @@ import org.doit.domain.DeptVO;
 import org.doit.domain.EmpVO;
 
 import com.util.DBConn;
-
-/**
- * @author jam
- * @date 오후 12:09:34
- * @subject [jdbc] 
- * @content 
- */
+// emp, dept테이블의 부서당 사람수 카운트
 public class Ex04 {
-	public static void main(String[] args) {
-		
-		String deptSql = "SELECT d.deptno, dname,  COUNT(empno) cnt "
-	              + "   FROM dept d FULL OUTER JOIN emp e ON d.deptno = e.deptno "
-	              + "   GROUP BY d.deptno, dname "
-	              + "   ORDER BY d.deptno ASC";
-	      
-		String empSql = "SELECT empno, ename, hiredate, sal+NVL(comm,0) pay "
-	              + "      FROM emp "
-	              + "      WHERE deptno = ?";  // deptno IS NULL (기억)
 
+	public static void main(String[] args) {
+		String deptSql = "select d.deptno, dname,count(empno) cnt "
+						+ " from emp e "
+						+ " full join  dept d on e.deptno = d.deptno "
+						+ " group by dname, d.deptno "
+						+ " order by d.deptno";
+			
+		String empSql =	" select empno, ename, hiredate, NVL(sal,comm) pay"
+						+ " from emp"
+						+ " where deptno = ?"; // 부서없으면 deptno IS NULL 처리!
+		
+		
+		
 		Connection conn = null;
 		PreparedStatement deptPstmt = null, empPstmt = null;
-		ResultSet deptRs = null, empRs = null;
+		ResultSet deptRs, empRs = null;
 		DeptVO dvo = null;
 		EmpVO evo = null;
 		ArrayList<EmpVO> empList = null;
+		LinkedHashMap<DeptVO,ArrayList<EmpVO>> lhMap = new LinkedHashMap<>();
 		
-		LinkedHashMap<DeptVO, ArrayList<EmpVO>> lhMap = new LinkedHashMap<>();
-		
+		// 1, 2
 		conn = DBConn.getConnection();
-		
-		int deptno,cnt;
+		int deptno, cnt;
 		String dname;
 		
 		int empno;
@@ -53,32 +49,29 @@ public class Ex04 {
 		LocalDateTime hiredate;
 		double pay;
 		
-		// 1,2
 		try {
 			deptPstmt = conn.prepareStatement(deptSql);
 			deptRs = deptPstmt.executeQuery();
 			while (deptRs.next()) {
-				empList = null;	//	 초기화
-				
+				empList = null; // null로 초기화해놓자!
 				deptno = deptRs.getInt("deptno");
 				dname = deptRs.getString("dname");
 				cnt = deptRs.getInt("cnt");
-				
 				dvo = new DeptVO(deptno, dname, null, cnt);
 				
-				// System.out.printf("%s(%d명) \n", dvo.getDname(),dvo.getCnt());
-				
-				// 해당 부서사원 조회 START
-				// >>> deptno = null empSql 설정
-				if(deptno == 0) {
-					empSql = "SELECT empno, ename, hiredate, sal+NVL(comm,0) pay "
-				              + "      FROM emp "
-				              + "      WHERE deptno IS NULL";  
+//				System.out.printf("%s(%d명) \n", dvo.getDname(), dvo.getCnt());
+				// 해당 부서사원 정보 조회 시작
+				if (deptno == 0) { //
+					empSql =	" select empno, ename, hiredate, NVL(sal,comm) pay"
+							+ " from emp"
+							+ " where deptno is null";
 				}
+				
 				empPstmt = conn.prepareStatement(empSql);
-				if(deptno != 0) empPstmt.setInt(1, deptno);
+				if (deptno !=0) empPstmt.setInt(1, deptno); //
 				empRs = empPstmt.executeQuery();
-				if(empRs.next()) {
+				
+				if (empRs.next()) {
 					empList = new ArrayList<EmpVO>();
 					do {
 						empno = empRs.getInt("empno");
@@ -94,76 +87,54 @@ public class Ex04 {
 								.build();
 						empList.add(evo);
 					} while (empRs.next());
-				} // if
-				
-				// 해당 부서사원 조회 END
-				// Map	k, v 엔트리 추가
-				lhMap.put(dvo, empList);
+					
+				} //if
+				// 사원 정보 조회 끝
+				// Map  에 k, v 엔트리 추가
+				lhMap.put(dvo, empList); // 맵 안에 추가가 됨.
 				
 			} // while
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}finally {
+		} finally {
 			try {
-				deptRs.close();
 				deptPstmt.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
+				deptPstmt.close();
+			} catch (Exception e2) {
+				e2.printStackTrace();
 			}
 		}
 		
-		// 4
+		// 4.
 		DBConn.close();
 		
 		dispLHMap(lhMap);
-		
-	}
+
+	} // main
 
 	private static void dispLHMap(LinkedHashMap<DeptVO, ArrayList<EmpVO>> lhMap) {
+		
 		Set<Entry<DeptVO, ArrayList<EmpVO>>> eset = lhMap.entrySet();
 		Iterator<Entry<DeptVO, ArrayList<EmpVO>>> eir = eset.iterator();
 		while (eir.hasNext()) {
 			Entry<DeptVO, ArrayList<EmpVO>> entry = eir.next();
 			DeptVO dvo = entry.getKey();
-			// ACCOUNTING(2명)
-			System.out.printf("%s(%d명) \n", dvo.getDname(),dvo.getCnt());
+			System.out.printf("%s(%d명) \n", dvo.getDname(), dvo.getCnt());
 			
 			ArrayList<EmpVO> empList = entry.getValue();
-			if(empList == null) {
-				System.out.println("\t 해당 부서원 존재 X");
-				continue;
-			}
+			if (empList == null) {
+					System.out.println("\t 해당 부서원은 존재하지 않음!");
+					continue;
+					}
 			Iterator<EmpVO> ir = empList.iterator();
 			while (ir.hasNext()) {
 				EmpVO evo = ir.next();
-				// empno ename hiredate pay
-				System.out.printf("\t%d\t%s\t%tF\t%.2f\n",
-						evo.getEmpno(), evo.getEname(), evo.getHiredate()
-						,evo.getSal());
+				System.out.printf("\s\s%d\t%s\t%tF\t%.2f\n",evo.getEmpno(),evo.getEname(), evo.getHiredate(), evo.getSal());
 			}
+			
 		} // while
+		
+		
 	}
-}
 
-/*
-	[실행결과]
-	ACCOUNTING(10)-3명
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	RESEARCH(20)-3명
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	SALES(30)-6명
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	empno ename hiredate pay
-	OPERATIONS(40)-1명
-	empno ename hiredate pay 
-	NULL - 1명
-	empno ename hiredate pay
-*/
+} // class

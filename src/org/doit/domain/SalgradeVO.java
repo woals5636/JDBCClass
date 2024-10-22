@@ -18,8 +18,9 @@ import lombok.ToString;
 public class SalgradeVO {
 	
 	private int grade;
-	private int losal;
 	private int hisal;
+	private int losal;
 	
 	private int cnt;
-}
+
+} // class

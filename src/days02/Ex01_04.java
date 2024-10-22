@@ -14,110 +14,123 @@ import org.doit.domain.EmpVO;
 
 import com.util.DBConn;
 
-/**
- * @author User
- * org.doit.domain 패키지
- * 			ㄴ EmpVO.java ( Value Object )
- * ArrayList<EmpVO> list
- * dispEmp() 출력함수
- * 
- * com.util 패키지
- * 		ㄴ DBConn.java
- * 			ㄴ Connection getConnection() 메서드 구현
- * 			ㄴ Connection getConnection() 메서드 구현
- * 			ㄴ Connection getConnection() 메서드 구현
- * 			ㄴ close() 메서드 구현
- * 			
- */
 public class Ex01_04 {
+
 	public static void main(String[] args) {
+		//emp 테이블의 모든 사원 정보 조회
+		// org.doit.domain 패키지
+		//  ㄴ EmpVO.java	( VO == Value Object )
+		// 1. JDBC 드라이버 로딩 - Class.forName()
+		// ArrayList<EmpVO> list
+		// dispEmp() // 출력하는 함수 선언
+		
+		// com.util 패키지
+		// 		ㄴ DBConn.java
+		//			ㄴ Connection getConnection() 메서드 구현
+		//			ㄴ Connection getConnection() 메서드 구현
+		//			ㄴ Connection getConnection() 메서드 구현
+		
 		
 		Connection conn = null;
-		Statement stmt = null;
-		ResultSet rs = null;
-		String sql = "SELECT * "
-				+ "FROM emp";
-		
+		Statement stmt = null; // 배달기사
+		ResultSet rs = null; // 결과담아놓는 집합.
+		String sql = "SELECT *" // empno, ename, job, mgr, hiredate, sal, comm, deptno
+					+ "FROM emp";
 		int empno;
 		String ename;
 		String job;
 		int mgr;
 //		String hiredate;
-//		Date hiredate;
-		LocalDateTime hiredate;
+//		Date hiredate; // 소숫점이 짤림.
+		LocalDateTime hiredate; // 이게 제일 낫다.
 		double sal;
 		double comm;
 		int deptno;
 		
 		ArrayList<EmpVO> list = new ArrayList<>();
-		EmpVO vo = null;
+		EmpVO vo = null; // 여기서 선언하고
 		
 		try {
-			// 1. + 2. == com.util.DBConn.getConnection
-			conn = DBConn.getConnection();
-			// 3. CRUD 작업 - Statement 객체
+			 conn = DBConn.getConnection();
 			stmt = conn.createStatement();
-			// int stmt.executeUpdate(sql);	// insert, update, delete
 			rs = stmt.executeQuery(sql); // select
 			
 			while (rs.next()) {
-				
 				empno = rs.getInt("empno");
+				deptno = rs.getInt("deptno");
 				ename = rs.getString("ename");
 				job = rs.getString("job");
 				mgr = rs.getInt("mgr");
-				hiredate = rs.getTimestamp("hiredate").toLocalDateTime();
+				hiredate = rs.getTimestamp("hiredate").toLocalDateTime(); // import java.util.Date;
 				sal = rs.getDouble("sal");
 				comm = rs.getDouble("comm");
-				deptno = rs.getInt("deptno");
 				
-				vo = new EmpVO(empno, ename,job,mgr,hiredate,sal,comm,deptno);
+				vo = new EmpVO(empno, ename, job, mgr, hiredate, sal, comm, deptno); // 여기서 변수를 활용하는게 좋음.
 				
 				list.add(vo);
 				
+				/*
+				
+				*/
 			} // while
-	
-			dispEmp(list);
 			
-		} catch (SQLException e){
+			dispEmp(list); // 이 함수 있어야 출력됨.
+			
+		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			// 4. Connection 객체 닫기 - close()
 			try {
-				// 닫는 순서 지켜야함
+				// 4. Connection 객체 닫기 - close()
 				rs.close();
-				stmt.close();
-				// conn.close();
+				stmt.close(); // 일꾼도 클로즈작업.
+//				conn.close();
 				DBConn.close();
-			} catch (Exception e) {
+			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-	} // main
-	
-	public static void dispEmp(ArrayList<EmpVO> list) {
-		if(list.size() == 0) {
-			System.out.println("사원이 존재하지 않습니다.");
-			return ;
-		}
 		
-		// 사원 정보 출력
-		// ㄴ.
-		list.forEach(vo->{
-			System.out.printf("%d\t%s\t%s\t%d\t%tF\t%.2f\t%.2f\t%d\n",
-					vo.getEmpno(), vo.getEname(),vo.getJob(),vo.getMgr(),
-					vo.getHiredate(),vo.getSal(),vo.getComm(),vo.getDeptno());
-		});
+	}
+	
+	public static void dispEmp (ArrayList<EmpVO> list) {
+		if (list.size() == 0) {
+			System.out.println("사원이 존재하지 않음!");
+			return ;
+		} 
+		// 사원정보 출력
+		// ㄴ. 이게 더 짧고 간편하다.
+		list.forEach(vo-> {
+			System.out.printf("%d\t%d\t%s\t%s\t%d\t%tF\t%f\t%f\n"
+					,vo.getEmpno(), vo.getDeptno(), vo.getEname(), vo.getJob()
+					, vo.getMgr(), vo.getHiredate(), vo.getSal(), vo.getComm());
+			
+		}); 
+		
+		
+		
+		
 		/*
-		 * ㄱ.
+		// ㄱ.
 		Iterator<EmpVO> ir = list.iterator();
 		while (ir.hasNext()) {
-			EmpVO vo = (EmpVO) ir.next();
-			System.out.println(vo.toString());
-			System.out.printf("%d\t%s\t%s\t%d\t%tF\t%.2f\t%.2f\t%d\n",
-					vo.getEmpno(), vo.getEname(),vo.getJob(),vo.getMgr(),
-					vo.getHiredate(),vo.getSal(),vo.getComm(),vo.getDeptno());
-		} // while
+			EmpVO vo = ir.next();
+			System.out.printf("%d\t%d\t%s\t%s\t%d\t%tF\t%f\t%f\n"
+					,vo.getEmpno(), vo.getDeptno(), vo.getEname(), vo.getJob()
+					, vo.getMgr(), vo.getHiredate(), vo.getSal(), vo.getComm()); // 아까 출력한대로 출력됨.
+//			System.out.println(vo.toString()); // toString으로 출력되는 양식.
+		}
 		*/
+		
+		
 	}
+
 } // class
+
+
+
+
+
+
+
+
+

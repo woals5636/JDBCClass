@@ -15,32 +15,29 @@ import days04.board.persistence.BoardDAO;
 import days04.board.persistence.BoardDAOImpl;
 import days04.board.service.BoardService;
 
-class BoardServiceTest {
-
+class BoardServiceImplTest {
+	
 	Connection conn = null;
 	BoardDAO dao = null;
 	BoardService service = null;
-
-	public BoardServiceTest() {
+	
+	public BoardServiceImplTest() {
 		this.conn = DBConn.getConnection();
 		this.dao = new BoardDAOImpl(this.conn);
 		this.service = new BoardService(this.dao);
 	}
-
+	
 	@Test
-	void testSelectSerivce() { 
-		
-		ArrayList<BoardDTO> list = this.service.selectService(1,10);
-		list.forEach(dto->{
-			System.out.println(dto);
-		}); 
+	void testSelectService() {
 
+			ArrayList<BoardDTO> list = this.service.selectService(1,10);
+			list.forEach(dto->{
+				System.out.println(dto);
+			});
+		
+	
+		
+		
 	}
 
 }
-
-
-
-
-
-

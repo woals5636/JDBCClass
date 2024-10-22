@@ -9,17 +9,18 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EmpDeptSalgradeVO {
-
+public class EmpDeptSalgradeVo {
+	
 //	private DeptVO dvo;
 //	private EmpVO evo;
+	
+	
 	
 	private int empno;
 	private String ename;
@@ -28,5 +29,4 @@ public class EmpDeptSalgradeVO {
 	private String dname;
 	private int grade;
 
-	
-}
+} // class

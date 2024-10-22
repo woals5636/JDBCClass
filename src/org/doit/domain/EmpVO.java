@@ -22,8 +22,8 @@ public class EmpVO {
 	private String job;
 	private int mgr;
 	private LocalDateTime hiredate;
-	private double sal;	// pay 포함
+	private double sal;
 	private double comm;
 	private int deptno;
-	
+
 } // class

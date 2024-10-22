@@ -17,10 +17,12 @@ public class BoardController {
 	private Scanner scanner = null;
 	private BoardService service;
 
-	// [페이징 처리 필드 선언]
+	// 페이징 처리 위한 변수(필드) 선언
 	private int currentPage = 1;
-	private int numberPerPage = 10;
-	private int numberOfPageBlock = 10;
+	private int numberPerPage = 10; // 한 페이지에 몇개 출력?
+	private int numberPageBlock = 10;
+	private int totalRecords;
+
 
 	public BoardController() {
 		super();
@@ -88,22 +90,20 @@ public class BoardController {
 
 	private void 검색하기() {
 		System.out.print(
-				"> 검색 조건 : 제목(t) , 내용(c), 작성자(w), 제목+내용(tc) 선택  ? ");
-		String searchCondition = this.scanner.next();
-		System.out.print("> 검색어 입력 ? ");
-		String searchWord = this.scanner.next();
-
+	            "> 검색 조건 : 제목(t) , 내용(c), 작성자(w), 제목+내용(tc) 선택  ? ");
+	      String searchCondition = this.scanner.next();
+	      System.out.print("> 검색어 입력 ? ");
+	      String searchWord = this.scanner.next();
+		
 		System.out.print("> 현재 페이지번호를 입력 ? ");
 		this.currentPage = this.scanner.nextInt();
 
-		ArrayList<BoardDTO> list = this.service
-				.searchService(searchCondition, searchWord,
-						this.currentPage,this.numberPerPage);
-		int cnt = 0;
+		ArrayList<BoardDTO> list = this.service.searchService(searchCondition, searchWord, this.currentPage,this.numberPerPage);
+
 		// 출력담당객체(View) + list
 		System.out.println("\t\t\t  게시판");
 		System.out.println("-------------------------------------------------------------------------");
-		System.out.printf("%s\t%-40s\t%s\t%-10s\t%s\n", 
+		System.out.printf("%s\t%-20s\t%s\t%-10s\t%s\n", 
 				"글번호","글제목","글쓴이","작성일","조회수");
 		System.out.println("-------------------------------------------------------------------------");
 		if (list == null) {
@@ -112,87 +112,86 @@ public class BoardController {
 			Iterator<BoardDTO> ir = list.iterator();
 			while (ir.hasNext()) {
 				BoardDTO dto =  ir.next();
-				System.out.printf("%d\t%-30s  %s\t%-10s\t%d\n",
+				System.out.printf("%d\t%-40s  %s\t%-10s\t%d\n",
 						dto.getSeq(), 
 						dto.getTitle(),
 						dto.getWriter(),
 						dto.getWritedate(),
 						dto.getReaded());   
-				cnt+=1;
 			} // while
 		}
 
 		System.out.println("-------------------------------------------------------------------------");      
-//		System.out.println("\t\t[1] 2 3 4 5 6 7 8 9 10 NEXT");
-		
-		PagingVO paging = new PagingVO(currentPage, numberPerPage, numberOfPageBlock);
-		
+		// 검색된 내역에 맞게 검색블록 나오게.
+		PagingVO paging = new PagingVO(currentPage, numberPerPage, numberPageBlock, searchCondition
+				, searchWord);
 		System.out.print("\t\t");
-		if(paging.prev)System.out.printf(" %s ","<");
-		for (int i = paging.start; i <= cnt; i++) {
-			System.out.printf(i==currentPage?"[%1$d] " : "%1$d ",  i);
+		if (paging.prev) System.out.printf(" %s ", "<");
+		for (int i = paging.start; i <= paging.end; i++) {
+			System.out.printf(i==currentPage?" [%1$d] " : " %1$d ", i );
 		}
-		if(paging.next)System.out.printf(" %s ",">");
+//		for (int i = paging.start; totalRecords/numberPerPage <= paging.end; i++) {
+//			System.out.printf(i==currentPage?"[%1$d]" : "%1$d", i );
+//		}
+		if (paging.next) System.out.printf(" %s ", ">");
 		
 		System.out.println("\n-------------------------------------------------------------------------");
+
 	}
 
 	private void 삭제하기() {
-		System.out.print("> 삭제하고자하는 게시글 번호를 입력 ? ");
+		System.out.println("> 삭제할 게시글 번호 입력 ? ");
 		long seq = this.scanner.nextLong();
-
-		int rowCount = this.service.deleteService(seq);  // 성공한 행의 수를 리턴
-
-		// 삽입 결과 출력
+		int rowCount = this.service.deleteService(seq);
 		if (rowCount == 1) {
-			System.out.println("새 글이 성공적으로 삭제되었습니다.");
+			System.out.println("> 삭제 완료!");
 			목록보기();
-		} else {
-			System.out.println("새 글 삭제에 실패했습니다.");
 		}
 
 	}
 
 	private void 수정하기() {
-		System.out.print("> 수정하고자하는 게시글 번호를 입력 ? ");
-		long seq = this.scanner.nextLong();
+		System.out.println("> 수정할 게시글 번호 입력 ? ");
+		int seq = this.scanner.nextInt();
 
-		System.out.print("> 1. 이메일 입력 ? ");
+		System.out.print("> 1. 제목 입력 ? ");
+		String title = scanner.next();
+		System.out.print("> 2. 내용 입력 ? "); 
+		String content = scanner.next();
+		System.out.print("> 3. 이메일 입력 ? ");
 		String email = scanner.next();
 
-		System.out.print("> 2. 제목 입력 ? ");
-		String title = scanner.next();
 
-		System.out.print("> 3. 내용 입력 ? ");
-		String content = scanner.next();   
-
-		BoardDTO dto = BoardDTO.builder()
+		BoardDTO dto = BoardDTO
+				.builder()
 				.seq(seq)
-				.email(email)
 				.title(title)
 				.content(content)
+				.email(email)
 				.build();
 
-		int rowCount = this.service.updateService(dto);
+
+		int rowCount = this.service.alterService(dto);
 		if (rowCount == 1) {
-			System.out.println("> 게시글 수정 성공!!!");
-			상세보기();
-		} else {
-			System.out.println("> 게시글 수정 실패!!!");
+			System.out.println("> 수정 완료!");
 		}
+
+
+
 	}
 
 	private void 상세보기() {
-		System.out.print("> 보고자하는 게시글 번호를 입력 ? ");
-		long seq = this.scanner.nextLong();
+		System.out.print("> 게시글 번호를 입력 ? ");
+		int seq = this.currentPage = this.scanner.nextInt();
+		// 게시글 가져와서 출력.
 
 		BoardDTO dto = this.service.viewService(seq);
 
-		if( dto == null) {
-			System.out.println("> 보고자 하는 게시글이 존재하지 않습니다.");
+
+		if (dto == null) {
+			System.out.println("> 게시글이 존재하지 않습니다.");
 			return;
 		}
-
 		// 뷰(View) : 출력 담당 객체
 		System.out.println("\tㄱ. 글번호 : " + seq );
 		System.out.println("\tㄴ. 작성자 : " + dto.getWriter() );
@@ -203,11 +202,10 @@ public class BoardController {
 
 		System.out.println("\t\n [수정] [삭제] [목록(home)]");
 
-		//일시정지();
-
 	}
 
 	private void 목록보기() {
+
 		System.out.print("> 현재 페이지번호를 입력 ? ");
 		this.currentPage = this.scanner.nextInt();
 
@@ -216,7 +214,7 @@ public class BoardController {
 		// 출력담당객체(View) + list
 		System.out.println("\t\t\t  게시판");
 		System.out.println("-------------------------------------------------------------------------");
-		System.out.printf("%s\t%-40s\t%s\t%-10s\t%s\n", 
+		System.out.printf("%s\t%-20s\t%s\t%-10s\t%s\n", 
 				"글번호","글제목","글쓴이","작성일","조회수");
 		System.out.println("-------------------------------------------------------------------------");
 		if (list == null) {
@@ -235,23 +233,26 @@ public class BoardController {
 		}
 
 		System.out.println("-------------------------------------------------------------------------");      
-//		System.out.println("\t\t[1] 2 3 4 5 6 7 8 9 10 NEXT");
-		PagingVO paging = new PagingVO(currentPage, numberPerPage, numberOfPageBlock);
+		// System.out.println("\t\t[1] 2 3 4 5 6 7 8 9 10 NEXT");
+		PagingVO paging = new PagingVO(currentPage, numberPerPage, numberPageBlock);
 		
 		System.out.print("\t\t");
-		if(paging.prev)System.out.printf(" %s ","<");
+		if (paging.prev) System.out.printf(" %s ", "<");
+		// System.out.println( paging.start + " / " + paging.end);
 		for (int i = paging.start; i <= paging.end; i++) {
-			System.out.printf(i==currentPage?"[%1$d] " : "%1$d ",  i);
+			System.out.printf(i==currentPage?" [%1$d] " : " %1$d ", i );
 		}
-		if(paging.next)System.out.printf(" %s ",">");
+		if (paging.next) System.out.printf(" %s ", ">");
 		
 		System.out.println("\n-------------------------------------------------------------------------");
 	}
 
-	private void 새글쓰기() {
-		System.out.println("> writer, pwd, email, title, tag, content 입력 ?");
-		String [] datas = this.scanner.nextLine().split("\\s*,\\s*");
 
+
+
+	private void 새글쓰기() {
+		System.out.print("> writer, pwd, email. title, tag, content 입력?");
+		String [] datas = this.scanner.nextLine().split("\\s*,\\s*");
 		String writer = datas[0];
 		String pwd = datas[1];
 		String email = datas[2];
@@ -259,7 +260,8 @@ public class BoardController {
 		int tag = Integer.parseInt(datas[4]);
 		String content = datas[5];
 
-		BoardDTO dto = new BoardDTO().builder()
+		BoardDTO dto = new BoardDTO()
+				.builder()
 				.writer(writer)
 				.pwd(pwd)
 				.email(email)
@@ -267,15 +269,12 @@ public class BoardController {
 				.tag(tag)
 				.content(content)
 				.build();
-
-		int rowCount = this.service.insertService(dto);  // 성공한 행의 수를 리턴
-
-		// 삽입 결과 출력
+		int rowCount = this.service.insertService(dto);
 		if (rowCount == 1) {
-			System.out.println("새 글이 성공적으로 저장되었습니다.");
-		} else {
-			System.out.println("새 글 저장에 실패했습니다.");
+			System.out.println("> 새 글 작성 완료!!");
 		}
+
+
 
 	}
 
@@ -297,3 +296,44 @@ public class BoardController {
 	}
 
 }
+
+/*
+게시판 테이블 , 시퀀스 생성
+BoardDTO
+BoardDAO 인터페이스
+  ㄴ ArrayList<BoardDTO> select() throws SQLException
+BoardDAOImpl 구현클래스
+  ㄴ ArrayList<BoardDTO> selectService()
+      트랜잭션
+       return    this.dao.select();
+       문자/메시지 전송
+       로그 기록 작업
+       커밋
+
+       롤백
+
+단위테스트
+  BoardDAOImpTest.java       this.dao.select()
+  BoardServiceTest.java      this.service.selectService(); 
+ * */
+
+/*
+ *    ojdbc6.jar
+  1. 
+     Class.forName();
+     Connection conn = DriverManager.getConnection(url, user, password);
+  1-1.Connection conn =  DBConn.getConnection();
+
+  3. CRUD 작업
+  String sql = "";
+  stmt;
+  pstmt;
+  cstmt;
+  I/U/D   int rowCount =  executeUpdate()
+  S       rs =  executeQuery()
+  while(rs.next()){
+
+  }      
+  4. 
+  con.close();    
+ * */

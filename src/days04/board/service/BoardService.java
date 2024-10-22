@@ -1,5 +1,7 @@
 package days04.board.service;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 
@@ -7,7 +9,7 @@ import days04.board.domain.BoardDTO;
 import days04.board.persistence.BoardDAO;
 import days04.board.persistence.BoardDAOImpl;
 
-// 트랜잭션 처리를 위한
+//서비스 안에서는 트랜젝션 작업을 한다.
 public class BoardService {
 
 	private BoardDAO dao = null;
@@ -25,18 +27,18 @@ public class BoardService {
 
 
 	// 1. 게시글 목록 서비스
-	public ArrayList<BoardDTO> selectService(int currentPage, int numberPerPage){
+	public ArrayList<BoardDTO> selectService(int currenPage, int numberPerPage){ 
 
 		ArrayList<BoardDTO> list = null;
 
-		// 1. DB 연동 list
+		// 1. DB연동 list
 		try {
 			((BoardDAOImpl)this.dao).getConn().setAutoCommit(false);
-			list = this.dao.select(currentPage, numberPerPage);
+			list = this.dao.select(currenPage,numberPerPage);
 			// 2. 로그 기록 작업
-			System.out.println("> 게시글 목룍 : 로그 기록 작업...");
-			// 3. 문자/메일 전송
-			System.out.println("> 게시글 목룍 : 문자/메일 전송 작업...");
+			System.out.println("> 게시글 목록 : 로그 기록 작업...");
+			// 3. 기타...문자
+			System.out.println("> 게시글 목록 : 문자/메일 전송 작업...");
 			((BoardDAOImpl)this.dao).getConn().commit();
 		} catch (SQLException e) {
 			try {
@@ -47,11 +49,12 @@ public class BoardService {
 			e.printStackTrace();
 		} finally {
 			try {
-				((BoardDAOImpl)this.dao).getConn().setAutoCommit(false);
+				((BoardDAOImpl)this.dao).getConn().setAutoCommit(true);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
+
 
 		return list;
 	}
@@ -62,8 +65,7 @@ public class BoardService {
 
 		try {
 			rowCount = this.dao.insert(dto);
-			// 2. 로그 기록 작업
-			System.out.println("> 게시글 쓰기 : 로그 기록 작업...");
+			System.out.println("> 게시글 쓰기 : 로그 기록!!");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -71,49 +73,46 @@ public class BoardService {
 		return rowCount;
 	}
 
-	// 3. 게시글 상세보기 서비스
-	public BoardDTO viewService(long seq) {
+	public BoardDTO viewService(int seq) {
 		int rowCount = 0;
 		BoardDTO dto = null;
 		try {
 			// 1. 조회수 증가
-			rowCount = this.dao.increaseReaded(seq);
-
-			// 2. 게시글 가져오는 SELECT
+			rowCount = this.dao.increasReaded(seq);
+			// 2. 해당 게시글 가져오기
 			dto = this.dao.view(seq);
-
-			// 2. 로그 기록 작업
-			System.out.println("> 게시글 쓰기 : 로그 기록 작업...");
-
+			// 3. 로그 기록
+			System.out.println("> 게시글 쓰기 : 로그 기록!!");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+
 		return dto;
 	}
 
 	public int deleteService(long seq) {
 		int rowCount = 0;
-
 		try {
-			// 1. 삭제
+			// 1. 삭제		
 			rowCount = this.dao.delete(seq);
-			// 2. 로그 기록 작업
-			System.out.println("> 게시글 삭제 : 로그 기록 작업...");
+			// 2. 로그 기록
+			System.out.println("> 게시글 삭제 : 로그 기록!!");
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 
 		return rowCount;
+
 	}
 
-	// 4. 게시글 수정 서비스
-	public int updateService(BoardDTO dto) {
+	// 2. 게시글 수정 서비스
+	public int alterService(BoardDTO dto) {
 		int rowCount = 0;
 
 		try {
-			rowCount = this.dao.update(dto);
-			// 2. 로그 기록 작업
-			System.out.println("> 게시글 쓰기 : 로그 기록 작업...");
+			rowCount = this.dao.alter(dto);
+			System.out.println("> 게시글 수정 : 로그 기록!!");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -121,20 +120,18 @@ public class BoardService {
 		return rowCount;
 	}
 
-	// 5. 게시글 검색 서비스
-	public ArrayList<BoardDTO> searchService(
-			String searchCondition, String searchWord,
-			int currentPage, int numberPerPage){
+	// 3. 게시글 검색 서비스
+	public ArrayList<BoardDTO> searchService(String searchCondition, String searchWord, int currenPage, int numberPerPage){ 
 
 		ArrayList<BoardDTO> list = null;
 
-		// 1. DB 연동 list
+		// 1. DB연동 list
 		try {
 			((BoardDAOImpl)this.dao).getConn().setAutoCommit(false);
-			list = this.dao.search(searchCondition, searchWord, currentPage, numberPerPage);
+			list = this.dao.search(searchCondition,searchWord,currenPage,numberPerPage);
 			// 2. 로그 기록 작업
 			System.out.println("> 게시글 검색 : 로그 기록 작업...");
-			// 3. 문자/메일 전송
+			// 3. 기타...문자
 			System.out.println("> 게시글 검색 : 문자/메일 전송 작업...");
 			((BoardDAOImpl)this.dao).getConn().commit();
 		} catch (SQLException e) {
@@ -146,14 +143,16 @@ public class BoardService {
 			e.printStackTrace();
 		} finally {
 			try {
-				((BoardDAOImpl)this.dao).getConn().setAutoCommit(false);
+				((BoardDAOImpl)this.dao).getConn().setAutoCommit(true);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
 
+
 		return list;
 	}
+
 
 
 

@@ -10,13 +10,19 @@ import days04.board.persistence.BoardDAOImpl;
 import days04.board.service.BoardService;
 
 /**
- * @author jam
- * @date 오전 9:01:20
- * @subject [jdbc] 게시판 구현 ( 모델 2방식 중 MVC 패터 ) 
- * @content 
+ * @author love
+ * @date 2024. 9. 5. 오전 9:00:52
+ * @content	[jdbc] 게시판 구현 - ( 모델2 방식 중 MVC패턴 )
  */
 public class Ex01 {
+
 	public static void main(String[] args) {
+		// 1. 패키지 선언
+		//    days04에 board 
+		// board.controllder - 모든 걸 총괄하는 클래스\
+		// service - 주문을 받아 서비스하는 작업 함.
+		// persistenct - 디비연동 DAO(데이터액세스) 
+		// domin - DTO, VO(값을가지는 객체)
 		
 		Connection conn = DBConn.getConnection();
 		BoardDAO dao = new BoardDAOImpl(conn);
@@ -24,49 +30,37 @@ public class Ex01 {
 		BoardController controller = new BoardController(service);
 		controller.boardStart();
 		
-		/*
-		 * 1. 패키지 선언
-		 *	days04.board
-		 *  days04.board.controller
-		 *	days04.board.service
-		 *	days04.board.persistence - DAO
-		 *	days04.board.domain - DTO, VO
-		 *
-		 * 2. http://taeyo.net/ 참조 
-		 * 
-		 * 3. 테이블 생성
-		 * 
-		 * -- ORACLE
+
+	} // main
+
+} // class
+
+/*
+ * 
+2. 더미데이터 만들기(sqld)
 CREATE SEQUENCE seq_tblcstVSBoard
 NOCACHE;
-
-CREATE TABLE tbl_cstVSBoard (
-  seq NUMBER NOT NULL PRIMARY KEY,
-  writer VARCHAR2 (20) NOT NULL,
-  pwd VARCHAR2 (20) NOT NULL,
-  email VARCHAR2 (100),
-  title VARCHAR2 (200) NOT NULL,
-  writedate DATE DEFAULT SYSDATE,
-  readed NUMBER DEFAULT 0,
-  tag NUMBER (1) NOT NULL,
-  content CLOB
+--
+CREATE TABLE tbl_cstVSBoard 
+(
+  seq NUMBER NOT NULL PRIMARY KEY, -- 글번호
+  writer VARCHAR (20) NOT NULL, -- 작성자
+  pwd VARCHAR (20) NOT NULL, -- 비밀번호
+  email VARCHAR (100) , -- 이메일
+  title VARCHAR (200) NOT NULL, -- 글제목
+  writedate DATE DEFAULT SYSDATE,  -- 작성일
+  readed NUMBER DEFAULT(0), -- 조회수
+  tag NUMBER(1) NOT NULL, -- 글의 형식(0 -> text, 1 -> HTML 태그 허용)
+  content CLOB -- 글의 내용
 );
-
 --
 BEGIN
-   FOR i IN 1..150 LOOP
-       INSERT INTO tbl_cstVSBoard ( seq,  writer, pwd, email, title, tag,  content) 
-       VALUES ( SEQ_TBLCSTVSBOARD.NEXTVAL, '홍길동' || MOD(i,10), '1234'
-       , '홍길동' || MOD(i,10) || '@sist.co.kr', '더미...'  || i, 0, '더미...' || i );
-   END LOOP;
-   COMMIT;
-END;
---
-BEGIN
-    UPDATE tbl_cstVSBoard
-    SET writer = '이시훈'
-    WHERE MOD(seq,15) = 2;
+    FOR i IN 1..150 LOOP
+        INSERT INTO tbl_cstVSBoard (seq, writer, pwd, email, title, tag, content)
+        VALUES (seq_tblcstVSBoard.NEXTVAL,'홍길동'|| MOD(i,10),'1234','홍길동'||MOD(i,10)||'@sis.co.kr','더미...'|| i,0,'더미~~~'|| i);
+    END LOOP;
     COMMIT;
+    
 END;
 --
 BEGIN
@@ -79,15 +73,11 @@ END;
 BEGIN
     UPDATE tbl_cstVSBoard
     SET title = '게시판 구현'
-    WHERE MOD(seq,15) IN(3,5,8);
+    WHERE MOD(seq,15) IN (3,5,8);
     COMMIT;
 END;
 --
-SELECT * 
-FROM tbl_cstVSBoard;
-		 * 
-		 * 4. days04.board.domain.BoardDTO.java
-		 * 
-		 * */
-	}
-}
+4. BoardDTO.java 추가 / days04.board.domain 안에 추가
+
+ * 
+ * */
